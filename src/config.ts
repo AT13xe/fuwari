@@ -10,14 +10,14 @@ import { LinkPreset } from "./types/config";
 export const siteConfig: SiteConfig = {
 	title: "AT13xe Blog",
 	subtitle: "Demo Site",
-	lang: "zh-CN", // Language code, e.g. 'en', 'zh-CN', 'ja', etc.
+	lang: "zh_CN", // Language code, e.g. 'en', 'zh-CN', 'ja', etc.
 	themeColor: {
 		hue: 360, // Default hue for the theme color, from 0 to 360. e.g. red: 0, teal: 200, cyan: 250, pink: 345
 		fixed: false, // Hide the theme color picker for visitors
 	},
 	banner: {
 		enable: false,
-		src: "https://pic.atxe.qzz.io/h", // Relative to the /src directory. Relative to the /public directory if it starts with '/'
+		src: "assets/images/xiao.jpg", // Relative to the /src directory. Relative to the /public directory if it starts with '/'
 		position: "center", // Equivalent to object-position, only supports 'top', 'center', 'bottom'. 'center' by default
 		credit: {
 			enable: false, // Display the credit text of the banner image
