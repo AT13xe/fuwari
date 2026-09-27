@@ -1,7 +1,7 @@
 {
   "friends": [
     {
-      "name": "Netlify(本站CDN)",
+      "name": "Netlify",
       "avatar": "https://www.netlify.com/favicon.ico",
       "description": "AWS高速IP，全球加速，静态部署",
       "url": "https://www.netlify.com/"
@@ -21,7 +21,7 @@
     {
       "name": "Cloudflare",
       "avatar": "https://www.cloudflare.com/favicon.ico",
-      "description": "网络加速与防护服务平台",
+      "description": "全球网络加速与防护服务平台",
       "url": "https://www.cloudflare.com/"
     }
   ]
