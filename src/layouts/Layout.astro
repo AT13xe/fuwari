@@ -5,6 +5,7 @@ import "@fontsource/roboto/500.css";
 import "@fontsource/roboto/700.css";
 
 import { profileConfig, siteConfig } from "@/config";
+import AnnouncementNotice from "@components/AnnouncementNotice.astro";
 import ConfigCarrier from "@components/ConfigCarrier.astro";
 import {
 	AUTO_MODE,
@@ -256,6 +257,7 @@ const bannerOffset =
 	  <div id="bg-box"></div>
 		<ConfigCarrier></ConfigCarrier>
 		<slot />
+		<AnnouncementNotice></AnnouncementNotice>
 
 		<!-- increase the page height during page transition to prevent the scrolling animation from jumping -->
 		<div id="page-height-extend" class="hidden h-[300vh]"></div>

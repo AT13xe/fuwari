@@ -1,0 +1,318 @@
+---
+import { url } from "@utils/url-utils";
+import { Icon } from "astro-icon/components";
+
+const announcementUrl = url("/announcement/");
+const dataUrl = url("/announcements.json");
+---
+
+<div
+    id="announcement-guard"
+    class="announcement-guard"
+    data-announcement-url={announcementUrl}
+    data-data-url={dataUrl}
+    hidden
+>
+    <div class="announcement-guard__scrim"></div>
+    <div
+        class="announcement-guard__dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="announcement-guard-title"
+    >
+        <div class="announcement-guard__icon">
+            <Icon name="material-symbols:notifications-active-rounded" class="text-[1.75rem]"></Icon>
+        </div>
+        <h2 id="announcement-guard-title" class="announcement-guard__title">
+            你有 <span id="announcement-guard-count">0</span> 条公告未读
+        </h2>
+        <p class="announcement-guard__desc">新的公告已经发布，记得查看哦～</p>
+
+        <div class="announcement-guard__actions">
+            <button
+                type="button"
+                class="announcement-guard__btn announcement-guard__btn--ghost"
+                data-action="snooze-today"
+            >
+                今日内不再提醒
+            </button>
+            <button
+                type="button"
+                class="announcement-guard__btn announcement-guard__btn--ghost"
+                data-action="snooze-7d"
+            >
+                7天内不再提醒
+            </button>
+            <button
+                type="button"
+                class="announcement-guard__btn announcement-guard__btn--primary"
+                data-action="go"
+            >
+                前往确认
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+    .announcement-guard {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1.25rem;
+    }
+
+    .announcement-guard[hidden] {
+        display: none;
+    }
+
+    .announcement-guard__scrim {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        opacity: 0;
+        transition: opacity 0.25s ease;
+    }
+
+    .announcement-guard.is-visible .announcement-guard__scrim {
+        opacity: 1;
+    }
+
+    .announcement-guard__dialog {
+        position: relative;
+        width: 100%;
+        max-width: 24rem;
+        padding: 1.75rem 1.5rem 1.5rem;
+        border-radius: var(--radius-large);
+        background: var(--card-bg);
+        border: 1px solid var(--line-color);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        text-align: center;
+        opacity: 0;
+        transform: translateY(12px) scale(0.96);
+        transition:
+            opacity 0.3s ease,
+            transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .announcement-guard.is-visible .announcement-guard__dialog {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+
+    .announcement-guard__icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 3.25rem;
+        height: 3.25rem;
+        margin: 0 auto 0.9rem;
+        border-radius: 9999px;
+        background: var(--btn-regular-bg);
+        color: var(--primary);
+    }
+
+    .announcement-guard__title {
+        margin-bottom: 0.35rem;
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: rgba(0, 0, 0, 0.9);
+    }
+
+    :global(.dark) .announcement-guard__title {
+        color: rgba(255, 255, 255, 0.9);
+    }
+
+    #announcement-guard-count {
+        color: var(--primary);
+        font-size: 1.35rem;
+    }
+
+    .announcement-guard__desc {
+        font-size: 0.85rem;
+        color: rgba(0, 0, 0, 0.55);
+    }
+
+    :global(.dark) .announcement-guard__desc {
+        color: rgba(255, 255, 255, 0.55);
+    }
+
+    .announcement-guard__actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.7rem;
+        margin-top: 1.35rem;
+    }
+
+    .announcement-guard__btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 2.75rem;
+        padding: 0.55rem 0.75rem;
+        border-radius: 0.75rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+        transition:
+            background-color 0.3s ease,
+            color 0.3s ease,
+            border-color 0.3s ease,
+            transform 0.15s ease,
+            box-shadow 0.3s ease;
+    }
+
+    .announcement-guard__btn:active {
+        transform: scale(0.96);
+    }
+
+    .announcement-guard__btn--ghost {
+        background: transparent;
+        border: 1px solid #000;
+        color: #fff;
+    }
+
+    .announcement-guard__btn--ghost:hover {
+        background: rgba(255, 255, 255, 0.08);
+    }
+
+    .announcement-guard__btn--primary {
+        grid-column: 1 / -1;
+        background: var(--primary);
+        border: 1px solid var(--primary);
+        color: #fff;
+    }
+
+    .announcement-guard__btn--primary:hover {
+        box-shadow: 0 0 0 4px oklch(0.75 0.14 var(--hue) / 0.2);
+    }
+</style>
+
+<style is:global>
+    body.announcement-guard-lock {
+        overflow: hidden;
+    }
+</style>
+
+<script>
+    const READ_KEY = "announcement-read";
+    const SNOOZE_KEY = "announcement-snooze-until";
+    const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+
+    function getStoredReadIds(): Set<string> {
+        try {
+            const raw = localStorage.getItem(READ_KEY);
+            const parsed = raw ? JSON.parse(raw) : [];
+            if (Array.isArray(parsed)) {
+                return new Set(parsed.map((value) => String(value)));
+            }
+        } catch {
+            // 忽略损坏的本地缓存
+        }
+        return new Set();
+    }
+
+    function normalizePath(path: string): string {
+        return path.replace(/\/+$/, "") || "/";
+    }
+
+    function closeGuard(guard: HTMLElement) {
+        guard.classList.remove("is-visible");
+        document.body.classList.remove("announcement-guard-lock");
+        window.setTimeout(() => {
+            guard.hidden = true;
+        }, 300);
+    }
+
+    function setupGuardButtons(guard: HTMLElement, announcementUrl: string) {
+        if (guard.dataset.bound === "1") return;
+        guard.dataset.bound = "1";
+
+        guard.addEventListener("click", (event) => {
+            const target = event.target;
+            if (!(target instanceof Element)) return;
+
+            const button = target.closest("[data-action]");
+            if (!button) return;
+
+            const action = button.getAttribute("data-action");
+            if (action === "go") {
+                closeGuard(guard);
+                window.location.href = announcementUrl;
+                return;
+            }
+
+            if (action === "snooze-today") {
+                const endOfToday = new Date();
+                endOfToday.setHours(23, 59, 59, 999);
+                localStorage.setItem(SNOOZE_KEY, String(endOfToday.getTime()));
+            } else if (action === "snooze-7d") {
+                localStorage.setItem(SNOOZE_KEY, String(Date.now() + SEVEN_DAYS));
+            }
+
+            closeGuard(guard);
+        });
+    }
+
+    async function runAnnouncementGuard() {
+        const guard = document.getElementById("announcement-guard");
+        if (!guard) return;
+
+        const announcementUrl = guard.dataset.announcementUrl || "/announcement/";
+        const dataUrl = guard.dataset.dataUrl || "/announcements.json";
+
+        // 公告页本身不弹提醒
+        const targetPath = normalizePath(new URL(announcementUrl, window.location.origin).pathname);
+        if (normalizePath(window.location.pathname) === targetPath) return;
+
+        // 免打扰期内不提醒（即使有新公告）
+        const snoozeUntil = Number(localStorage.getItem(SNOOZE_KEY) || 0);
+        if (Number.isFinite(snoozeUntil) && Date.now() < snoozeUntil) return;
+
+        let ids: string[] = [];
+        try {
+            const response = await fetch(dataUrl, { cache: "no-store" });
+            if (!response.ok) return;
+            const data = await response.json();
+            ids = Array.isArray(data.ids) ? data.ids.map((value: unknown) => String(value)) : [];
+        } catch {
+            return;
+        }
+
+        const readIds = getStoredReadIds();
+        const unread = ids.filter((id) => !readIds.has(id));
+        if (unread.length === 0) return;
+
+        const countElement = document.getElementById("announcement-guard-count");
+        if (countElement) {
+            countElement.textContent = String(unread.length);
+        }
+
+        guard.hidden = false;
+        document.body.classList.add("announcement-guard-lock");
+        window.requestAnimationFrame(() => guard.classList.add("is-visible"));
+
+        const primaryButton = guard.querySelector<HTMLButtonElement>('[data-action="go"]');
+        primaryButton?.focus();
+    }
+
+    function bootstrapAnnouncementGuard() {
+        const guard = document.getElementById("announcement-guard");
+        if (!guard) return;
+        const announcementUrl = guard.dataset.announcementUrl || "/announcement/";
+        setupGuardButtons(guard, announcementUrl);
+        void runAnnouncementGuard();
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", bootstrapAnnouncementGuard);
+    } else {
+        bootstrapAnnouncementGuard();
+    }
+</script>

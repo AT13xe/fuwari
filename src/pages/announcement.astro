@@ -1,0 +1,260 @@
+---
+import Markdown from "@components/misc/Markdown.astro";
+import MainGridLayout from "@layouts/MainGridLayout.astro";
+import { getSortedAnnouncements } from "@utils/announcement-utils";
+import { formatDateToYYYYMMDD } from "@utils/date-utils";
+import { Icon } from "astro-icon/components";
+
+const announcements = await getSortedAnnouncements();
+const items = await Promise.all(
+	announcements.map(async (entry) => {
+		const { Content } = await entry.render();
+		return { entry, Content };
+	}),
+);
+---
+
+<MainGridLayout title="公告">
+    <div class="card-base p-6 md:p-8">
+        <!-- 页头 -->
+        <div class="flex items-center gap-3 mb-6">
+            <div class="h-10 w-10 rounded-xl bg-[var(--primary)] flex items-center justify-center text-white shrink-0">
+                <Icon name="material-symbols:campaign-rounded" class="text-[1.6rem]"></Icon>
+            </div>
+            <div>
+                <h1 class="text-2xl font-bold text-black dark:text-white leading-tight">公告</h1>
+                <p class="text-sm text-black/50 dark:text-white/50">
+                    共 {announcements.length} 条 · 按发布时间从新到旧
+                </p>
+            </div>
+        </div>
+
+        {announcements.length === 0 ? (
+            <div class="announcement-empty">
+                <Icon name="material-symbols:inbox-outline-rounded" class="text-[3rem] mb-2"></Icon>
+                <p>暂时还没有公告</p>
+            </div>
+        ) : (
+            <div class="flex flex-col gap-5">
+                {items.map(({ entry, Content }, index) => (
+                    <article
+                        class="announcement-card card-base p-5 md:p-6 onload-animation"
+                        data-announcement-id={entry.slug}
+                        style={`animation-delay: calc(var(--content-delay) + ${index * 60}ms);`}
+                    >
+                        <div class="flex items-center justify-between gap-4 mb-4">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <div class="announcement-badge">
+                                    <Icon name="material-symbols:notifications-active-rounded" class="text-[1.05rem]"></Icon>
+                                </div>
+                                <div class="min-w-0">
+                                    {entry.data.title && (
+                                        <div class="font-bold text-black/90 dark:text-white/90 truncate">
+                                            {entry.data.title}
+                                        </div>
+                                    )}
+                                    <time
+                                        class="text-xs text-black/45 dark:text-white/45"
+                                        datetime={formatDateToYYYYMMDD(entry.data.published)}
+                                    >
+                                        {formatDateToYYYYMMDD(entry.data.published)}
+                                    </time>
+                                </div>
+                            </div>
+
+                            <button
+                                type="button"
+                                class="ack-btn shrink-0"
+                                data-announcement-id={entry.slug}
+                                aria-pressed="false"
+                            >
+                                <span class="ack-btn__label">点击收到</span>
+                            </button>
+                        </div>
+
+                        <Markdown class="announcement-markdown">
+                            <Content />
+                        </Markdown>
+                    </article>
+                ))}
+            </div>
+        )}
+    </div>
+</MainGridLayout>
+
+<style>
+    .announcement-empty {
+        @apply flex flex-col items-center justify-center py-16 text-black/40 dark:text-white/40;
+    }
+
+    .announcement-card {
+        position: relative;
+    }
+
+    .announcement-card::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 1.5rem;
+        bottom: 1.5rem;
+        width: 4px;
+        border-radius: 9999px;
+        background: var(--primary);
+        opacity: 0.85;
+    }
+
+    .announcement-badge {
+        @apply flex items-center justify-center shrink-0;
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 0.75rem;
+        background: var(--btn-regular-bg);
+        color: var(--primary);
+    }
+
+    /* 「点击收到」按钮 */
+    .ack-btn {
+        @apply inline-flex items-center justify-center font-semibold;
+        min-width: 6rem;
+        padding: 0.5rem 1.1rem;
+        border-radius: 9999px;
+        font-size: 0.875rem;
+        line-height: 1.25rem;
+        white-space: nowrap;
+        cursor: pointer;
+        border: 1px solid var(--primary);
+        background: var(--primary);
+        color: #fff;
+        -webkit-tap-highlight-color: transparent;
+        transition:
+            background-color 0.35s ease,
+            color 0.35s ease,
+            border-color 0.35s ease,
+            transform 0.15s ease,
+            box-shadow 0.35s ease;
+    }
+
+    .ack-btn:hover {
+        box-shadow: 0 0 0 4px oklch(0.75 0.14 var(--hue) / 0.18);
+    }
+
+    .ack-btn:active {
+        transform: scale(0.92);
+    }
+
+    .ack-btn.is-acked {
+        background: transparent;
+        color: var(--primary);
+        border-color: #000;
+        cursor: default;
+    }
+
+    .ack-btn.is-acked:hover {
+        box-shadow: none;
+    }
+
+    .ack-btn.just-acked {
+        animation: ack-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes ack-pop {
+        0% {
+            transform: scale(1);
+        }
+        35% {
+            transform: scale(1.14);
+        }
+        60% {
+            transform: scale(0.96);
+        }
+        100% {
+            transform: scale(1);
+        }
+    }
+
+    .announcement-markdown :global(h1:first-child),
+    .announcement-markdown :global(h2:first-child),
+    .announcement-markdown :global(h3:first-child),
+    .announcement-markdown :global(p:first-child) {
+        margin-top: 0;
+    }
+
+    .announcement-markdown :global(p:last-child),
+    .announcement-markdown :global(ul:last-child),
+    .announcement-markdown :global(ol:last-child) {
+        margin-bottom: 0;
+    }
+</style>
+
+<script>
+    const READ_KEY = "announcement-read";
+
+    function getReadIds(): Set<string> {
+        try {
+            const raw = localStorage.getItem(READ_KEY);
+            const parsed = raw ? JSON.parse(raw) : [];
+            if (Array.isArray(parsed)) {
+                return new Set(parsed.map((value) => String(value)));
+            }
+        } catch {
+            // 忽略损坏的本地缓存
+        }
+        return new Set();
+    }
+
+    function saveReadIds(ids: Set<string>) {
+        try {
+            localStorage.setItem(READ_KEY, JSON.stringify([...ids]));
+        } catch {
+            // 忽略写入失败（如隐私模式）
+        }
+    }
+
+    function initAnnouncementCards() {
+        const readIds = getReadIds();
+        const cards = document.querySelectorAll<HTMLElement>(".announcement-card");
+
+        cards.forEach((card) => {
+            const id = card.dataset.announcementId;
+            if (!id) return;
+
+            const button = card.querySelector<HTMLButtonElement>(".ack-btn");
+            const label = button?.querySelector<HTMLElement>(".ack-btn__label");
+            if (!button || !label) return;
+
+            const applyState = (acked: boolean) => {
+                button.classList.toggle("is-acked", acked);
+                button.setAttribute("aria-pressed", String(acked));
+                label.textContent = acked ? "已收到" : "点击收到";
+            };
+
+            applyState(readIds.has(id));
+
+            if (button.dataset.bound === "1") return;
+            button.dataset.bound = "1";
+
+            button.addEventListener("click", () => {
+                if (button.classList.contains("is-acked")) return;
+
+                const current = getReadIds();
+                current.add(id);
+                saveReadIds(current);
+                applyState(true);
+
+                button.classList.remove("just-acked");
+                void button.offsetWidth; // 重排以重新播放动画
+                button.classList.add("just-acked");
+                window.setTimeout(() => button.classList.remove("just-acked"), 500);
+            });
+        });
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initAnnouncementCards);
+    } else {
+        initAnnouncementCards();
+    }
+    // 兼容 Swup 站内跳转（公告页位于被替换的 <main> 内）
+    document.addEventListener("swup:contentReplaced", initAnnouncementCards);
+    document.addEventListener("swup:page:view", initAnnouncementCards);
+</script>

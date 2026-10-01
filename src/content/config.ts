@@ -29,6 +29,14 @@ const specCollection = defineCollection({
 	}),
 });
 
+const announcementCollection = defineCollection({
+	schema: z.object({
+		title: z.string().optional().default(""),
+		published: z.date(),
+		draft: z.boolean().optional().default(false),
+	}),
+});
+
 const assetsCollection = defineCollection({
 	type: 'data',
 	schema: z.object({
@@ -41,4 +49,5 @@ export const collections = {
 	posts: postsCollection,
 	spec: specCollection,
 	assets: assetsCollection,
+	announcement: announcementCollection,
 };
