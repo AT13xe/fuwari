@@ -8,6 +8,7 @@ import { url } from "../utils/url-utils";
 import Search from "./Search.svelte";
 import DisplaySettings from "./widget/DisplaySettings.svelte";
 import NavMenuPanel from "./widget/NavMenuPanel.astro";
+
 const className = Astro.props.class;
 
 let links: NavBarLink[] = navBarConfig.links.map(
@@ -19,70 +20,414 @@ let links: NavBarLink[] = navBarConfig.links.map(
 	},
 );
 ---
-<div id="navbar" class="z-50 onload-animation">
-    <div class="absolute h-8 left-0 right-0 -top-8 bg-[var(--card-bg)] transition"></div> <!-- used for onload animation -->
-    <div class:list={[
-        className,
-        "card-base border border-black/10 dark:border-white/10 !overflow-visible max-w-[var(--page-width)] h-[4.5rem] !rounded-t-none mx-auto flex items-center justify-between px-4"]}>
-        <a href={url('/')} class="btn-plain scale-animation rounded-lg h-[3.25rem] px-5 font-bold active:scale-95">
-            <div class="flex flex-row text-[var(--primary)] items-center text-md">
-                <Icon name="material-symbols:home-outline-rounded" class="text-[1.75rem] mb-1 mr-2" />
-                {siteConfig.title}
-            </div>
-        </a>
-        <div class="hidden md:flex">
-            {links.map((l) => {
-                return <a aria-label={l.name} href={l.external ? l.url : url(l.url)} target={l.external ? "_blank" : null}
-                          class="btn-plain scale-animation rounded-lg h-11 font-bold px-5 active:scale-95"
-                >
-                    <div class="flex items-center">
-                        {l.name}
-                        {l.external && <Icon name="fa6-solid:arrow-up-right-from-square" class="text-[0.875rem] transition -translate-y-[1px] ml-1 text-black/[0.2] dark:text-white/[0.2]"></Icon>}
-                    </div>
-                </a>;
-            })}
-        </div>
-        <div class="flex">
-            <!--<SearchPanel client:load>-->
-            <Search client:only="svelte"></Search>
-            {!siteConfig.themeColor.fixed && (
-                    <button aria-label="Display Settings" class="btn-plain scale-animation rounded-lg h-11 w-11 active:scale-90" id="display-settings-switch">
-                        <Icon name="material-symbols:palette-outline" class="text-[1.25rem]"></Icon>
-                    </button>
-            )}
 
-            <button aria-label="Menu" name="Nav Menu" class="btn-plain scale-animation rounded-lg w-11 h-11 active:scale-90 md:!hidden" id="nav-menu-switch">
-                <Icon name="material-symbols:menu-rounded" class="text-[1.25rem]"></Icon>
-            </button>
-        </div>
-        <NavMenuPanel links={links}></NavMenuPanel>
-        <DisplaySettings client:only="svelte"></DisplaySettings>
-    </div>
+<div id="navbar" class="z-50 onload-animation">
+	<div
+		id="navbar-card"
+		class:list={[
+			className,
+			"card-base border border-black/10 dark:border-white/10 !overflow-visible max-w-[var(--page-width)] h-[4.5rem] !rounded-full mx-auto flex items-center justify-between px-4",
+		]}
+	>
+		<a
+			id="navbar-brand"
+			href={url("/")}
+			class="btn-plain scale-animation rounded-lg h-[3.25rem] px-5 font-bold active:scale-95 shrink-0 whitespace-nowrap"
+		>
+			<div class="flex flex-row text-[var(--primary)] items-center text-md">
+				<Icon
+					name="material-symbols:home-outline-rounded"
+					class="text-[1.75rem] mb-1 mr-2"
+				/>
+				{siteConfig.title}
+			</div>
+		</a>
+
+		<nav
+			id="navbar-links"
+			class="flex flex-nowrap items-center justify-center flex-1 min-w-0 overflow-hidden"
+		>
+			{
+				links.map((l, i) => (
+					<span class="nav-item" data-nav-index={i}>
+						<a
+							aria-label={l.name}
+							href={l.external ? l.url : url(l.url)}
+							target={l.external ? "_blank" : undefined}
+							class="btn-plain scale-animation rounded-lg h-11 font-bold px-5 active:scale-95 shrink-0 whitespace-nowrap inline-flex items-center"
+						>
+							<div class="flex items-center whitespace-nowrap">
+								{l.name}
+								{l.external && (
+									<Icon
+										name="fa6-solid:arrow-up-right-from-square"
+										class="text-[0.875rem] transition -translate-y-[1px] ml-1 text-black/[0.2] dark:text-white/[0.2]"
+									/>
+								)}
+							</div>
+						</a>
+					</span>
+				))
+			}
+		</nav>
+
+		<div id="navbar-controls" class="flex items-center shrink-0">
+			<Search client:only="svelte" />
+
+			{
+				!siteConfig.themeColor.fixed && (
+					<button
+						aria-label="Display Settings"
+						class="btn-plain scale-animation rounded-lg h-11 w-11 active:scale-90"
+						id="display-settings-switch"
+					>
+						<Icon
+							name="material-symbols:palette-outline"
+							class="text-[1.25rem]"
+						/>
+					</button>
+				)
+			}
+
+			<button
+				aria-label="Menu"
+				name="Nav Menu"
+				disabled
+				aria-hidden="true"
+				tabindex="-1"
+				class="nav-menu-btn nav-menu-btn-collapsed btn-plain scale-animation rounded-lg w-11 h-11 ml-2 active:scale-90"
+				id="nav-menu-switch"
+			>
+				<Icon
+					name="material-symbols:menu-rounded"
+					class="text-[1.25rem] shrink-0"
+				/>
+			</button>
+		</div>
+
+		<NavMenuPanel links={links} />
+		<DisplaySettings client:only="svelte" />
+	</div>
 </div>
 
+<style>
+	.nav-item {
+		display: inline-flex;
+		flex-shrink: 0;
+		overflow: hidden;
+		transition:
+			max-width 300ms cubic-bezier(0.4, 0, 0.2, 1),
+			opacity 200ms ease,
+			transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+	}
+
+	.nav-item-collapsed {
+		min-width: 0;
+		opacity: 0;
+		transform: translateY(-4px) scale(0.94);
+		pointer-events: none;
+	}
+
+	.nav-menu-btn {
+		overflow: hidden;
+		transition:
+			width 300ms cubic-bezier(0.4, 0, 0.2, 1),
+			opacity 200ms ease;
+	}
+
+	.nav-menu-btn-collapsed {
+		width: 0 !important;
+		min-width: 0;
+		padding-left: 0;
+		padding-right: 0;
+		opacity: 0;
+		pointer-events: none;
+	}
+</style>
+
 <script>
-function loadButtonScript() {
+	// Small buffer so we never sit exactly on the breaking point (and to absorb the card border).
+	const SAFETY_GAP = 10;
 
-    let settingBtn = document.getElementById("display-settings-switch");
-    if (settingBtn) {
-        settingBtn.onclick = function () {
-            let settingPanel = document.getElementById("display-setting");
-            if (settingPanel) {
-                settingPanel.classList.toggle("float-panel-closed");
-            }
-        };
-    }
+	function initNavbarOverflow() {
+		const card = document.getElementById("navbar-card");
+		const brand = document.getElementById("navbar-brand");
+		const linksNav = document.getElementById("navbar-links");
+		const controls = document.getElementById("navbar-controls");
+		const menuBtn = document.getElementById(
+			"nav-menu-switch",
+		) as HTMLButtonElement | null;
+		const menuPanel = document.getElementById("nav-menu-panel");
 
-    let menuBtn = document.getElementById("nav-menu-switch");
-    if (menuBtn) {
-        menuBtn.onclick = function () {
-            let menuPanel = document.getElementById("nav-menu-panel");
-            if (menuPanel) {
-                menuPanel.classList.toggle("float-panel-closed");
-            }
-        };
-    }
-}
+		if (!card || !linksNav || !controls || !menuBtn) return;
 
-loadButtonScript();
+		const wrappers = Array.from(
+			linksNav.querySelectorAll<HTMLElement>(".nav-item"),
+		);
+
+		const anchors = wrappers.map((w) =>
+			w.querySelector<HTMLAnchorElement>("a"),
+		);
+
+		const menuItems = menuPanel
+			? Array.from(
+					menuPanel.querySelectorAll<HTMLElement>(".nav-menu-item"),
+				)
+			: [];
+
+		const total = wrappers.length;
+		const timers = new WeakMap<HTMLElement, number>();
+
+		let menuVisible: boolean | null = null;
+		let firstRun = true;
+		let recomputeTimer: number | undefined;
+
+		function expandItem(
+			wrapper: HTMLElement,
+			anchor: HTMLAnchorElement | null,
+		) {
+			const pending = timers.get(wrapper);
+
+			if (pending) {
+				window.clearTimeout(pending);
+			}
+
+			if (!wrapper.classList.contains("nav-item-collapsed")) {
+				wrapper.style.maxWidth = "none";
+				return;
+			}
+
+			wrapper.style.maxWidth = `${anchor ? anchor.offsetWidth : wrapper.offsetWidth}px`;
+			wrapper.classList.remove("nav-item-collapsed");
+			wrapper.removeAttribute("aria-hidden");
+			anchor?.removeAttribute("tabindex");
+
+			timers.set(
+				wrapper,
+				window.setTimeout(() => {
+					timers.delete(wrapper);
+
+					if (!wrapper.classList.contains("nav-item-collapsed")) {
+						wrapper.style.maxWidth = "none";
+					}
+				}, 340),
+			);
+		}
+
+		function collapseItem(
+			wrapper: HTMLElement,
+			anchor: HTMLAnchorElement | null,
+		) {
+			if (wrapper.classList.contains("nav-item-collapsed")) return;
+
+			const pending = timers.get(wrapper);
+
+			if (pending) {
+				window.clearTimeout(pending);
+			}
+
+			timers.delete(wrapper);
+
+			wrapper.style.maxWidth = `${anchor ? anchor.offsetWidth : wrapper.offsetWidth}px`;
+
+			// Force a reflow so the max-width transition starts from the natural width.
+			void wrapper.offsetWidth;
+
+			wrapper.classList.add("nav-item-collapsed");
+			wrapper.style.maxWidth = "0px";
+			wrapper.setAttribute("aria-hidden", "true");
+			anchor?.setAttribute("tabindex", "-1");
+		}
+
+		function setMenuVisible(show: boolean) {
+			if (menuVisible === show) return;
+
+			menuVisible = show;
+
+			if (show) {
+				menuBtn!.classList.remove("nav-menu-btn-collapsed");
+				menuBtn!.disabled = false;
+				menuBtn!.removeAttribute("tabindex");
+				menuBtn!.removeAttribute("aria-hidden");
+			} else {
+				menuBtn!.classList.add("nav-menu-btn-collapsed");
+				menuBtn!.disabled = true;
+				menuBtn!.setAttribute("tabindex", "-1");
+				menuBtn!.setAttribute("aria-hidden", "true");
+				menuPanel?.classList.add("float-panel-closed");
+			}
+		}
+
+		function computeState() {
+			const cardStyle = getComputedStyle(card!);
+
+			const inner =
+				card!.clientWidth -
+				(Number.parseFloat(cardStyle.paddingLeft) || 0) -
+				(Number.parseFloat(cardStyle.paddingRight) || 0);
+
+			const brandWidth = brand ? brand.offsetWidth : 0;
+
+			// w-11 = 2.75rem, resolved against the root font size.
+			const rootFontSize =
+				Number.parseFloat(
+					getComputedStyle(document.documentElement).fontSize,
+				) || 16;
+
+			const menuBtnWidth = rootFontSize * 2.75;
+
+			// Measure the search/settings controls without the hamburger button so the
+			// calculation is independent of the button's current visible state.
+			// The button keeps its margin in both states, so this stays stable.
+			const controlsWidth = controls!.offsetWidth - menuBtn!.offsetWidth;
+
+			const available = Math.max(
+				0,
+				inner - brandWidth - controlsWidth - SAFETY_GAP,
+			);
+
+			const widths = anchors.map((a) => (a ? a.offsetWidth : 0));
+			const needed = widths.reduce((sum, w) => sum + w, 0);
+
+			let visibleCount = total;
+			let showMenu = false;
+
+			if (needed > available) {
+				const availableWithButton = Math.max(
+					0,
+					available - menuBtnWidth,
+				);
+
+				let sum = 0;
+				let count = 0;
+
+				for (let i = 0; i < total; i++) {
+					if (sum + widths[i] <= availableWithButton) {
+						sum += widths[i];
+						count++;
+					} else {
+						break;
+					}
+				}
+
+				visibleCount = count;
+				showMenu = true;
+			}
+
+			if (firstRun) {
+				for (const wrapper of wrappers) {
+					wrapper.style.transition = "none";
+				}
+
+				menuBtn!.style.transition = "none";
+			}
+
+			for (let i = 0; i < total; i++) {
+				if (i < visibleCount) {
+					expandItem(wrappers[i], anchors[i]);
+				} else {
+					collapseItem(wrappers[i], anchors[i]);
+				}
+			}
+
+			menuItems.forEach((item, i) => {
+				item.classList.toggle("hidden", i < visibleCount);
+			});
+
+			setMenuVisible(showMenu);
+
+			if (firstRun) {
+				// Commit the initial layout without animating, then re-enable transitions.
+				void card!.offsetWidth;
+
+				for (const wrapper of wrappers) {
+					wrapper.style.transition = "";
+				}
+
+				menuBtn!.style.transition = "";
+				firstRun = false;
+			}
+		}
+
+		function scheduleRecompute(delay = 60) {
+			window.clearTimeout(recomputeTimer);
+			recomputeTimer = window.setTimeout(computeState, delay);
+		}
+
+		if (typeof ResizeObserver !== "undefined") {
+			const observer = new ResizeObserver(() => scheduleRecompute(60));
+
+			observer.observe(card);
+			observer.observe(controls);
+		}
+
+		window.addEventListener("resize", () => scheduleRecompute(60));
+
+		// The desktop search bar widens while it is focused, so space has to be
+		// re-evaluated after that transition settles.
+		card.addEventListener("focusin", () => scheduleRecompute(180));
+		card.addEventListener("focusout", () => scheduleRecompute(180));
+
+		if (document.fonts) {
+			document.fonts.ready.then(() => scheduleRecompute(0));
+		}
+
+		window.addEventListener("load", () => scheduleRecompute(0));
+
+		const swup = (
+			window as unknown as {
+				swup?: {
+					hooks?: {
+						on: (
+							name: string,
+							cb: () => void,
+						) => void;
+					};
+				};
+			}
+		).swup;
+
+		if (swup?.hooks) {
+			swup.hooks.on("page:view", () => scheduleRecompute(0));
+		} else {
+			document.addEventListener("swup:enable", () => {
+				swup?.hooks?.on("page:view", () => scheduleRecompute(0));
+			});
+		}
+
+		computeState();
+	}
+
+	function loadButtonScript() {
+		const settingBtn = document.getElementById(
+			"display-settings-switch",
+		);
+
+		if (settingBtn) {
+			settingBtn.onclick = function () {
+				const settingPanel =
+					document.getElementById("display-setting");
+
+				if (settingPanel) {
+					settingPanel.classList.toggle("float-panel-closed");
+				}
+			};
+		}
+
+		const menuBtn = document.getElementById("nav-menu-switch");
+
+		if (menuBtn) {
+			menuBtn.onclick = function () {
+				const menuPanel =
+					document.getElementById("nav-menu-panel");
+
+				if (menuPanel) {
+					menuPanel.classList.toggle("float-panel-closed");
+				}
+			};
+		}
+	}
+
+	initNavbarOverflow();
+	loadButtonScript();
 </script>
